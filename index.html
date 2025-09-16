@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二列沉淀池排泥状态监测</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            line-height: 1.6;
+            padding: 15px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        header {
+            background: linear-gradient(to right, #2c3e50, #4ca1af);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            margin: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eaeaea;
+            display: flex;
+            align-items: center;
+        }
+        h2 i {
+            margin-right: 10px;
+        }
+        .status-panel {
+            text-align: center;
+            padding: 25px;
+            border-radius: 12px;
+            transition: all 0.5s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .sludging {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+        }
+        .not-sludging {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+        }
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .status-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .timer {
+            font-size: 1.8rem;
+            margin: 15px 0;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .current-time {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 1.2rem;
+        }
+        .query-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input[type="datetime-local"] {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .query-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .result-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .history-table th, .history-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #eaeaea;
+        }
+        .history-table th {
+            background: #2c3e50;
+            color: white;
+        }
+        .history-table tr:hover {
+            background: #f5f7fa;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #2c3e50;
+            color: white;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .status-text {
+                font-size: 1.6rem;
+            }
+            .timer {
+                font-size: 1.4rem;
+            }
+        }
+        .highlight {
+            background: #ffeaa7;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .info-box {
+            background: #e8f4fc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-water"></i> 二列沉淀池排泥状态监测</h1>
+            <p class="subtitle">实时监测与历史查询系统</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2><i class="fas fa-chart-line"></i> 实时状态监测</h2>
+                
+                <div class="info-box">
+                    <p><i class="fas fa-info-circle"></i> 排泥规则：从2025-09-16 21:20开始，排泥120分钟，停20分钟，循环进行</p>
+                </div>
+                
+                <div class="status-panel" id="status-panel">
+                    <div class="status-icon"><i class="fas fa-tint"></i></div>
+                    <div class="status-text">状态检测中...</div>
+                    <div class="current-time" id="current-time">当前时间：加载中...</div>
+                    <div class="timer" id="timer">--:--</div>
+                    <div id="next-change">下次状态变化：计算中...</div>
+                </div>
+                
+                <h2><i class="fas fa-history"></i> 最近排泥记录</h2>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-table">
+                        <!-- 最近记录将通过JavaScript生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="panel">
+                <h2><i class="fas fa-search"></i> 时间段查询</h2>
+                
+                <div class="query-form">
+                    <div class="form-group">
+                        <label for="query-time">选择查询时间：</label>
+                        <input type="datetime-local" id="query-time" value="2025-09-16T21:20">
+                    </div>
+                    
+                    <button onclick="checkTime()"><i class="fas fa-search"></i> 查询排泥状态</button>
+                </div>
+                
+                <div class="query-result" id="query-result">
+                    <div class="result-icon"><i class="fas fa-question-circle"></i></div>
+                    <div class="result-text">查询结果将显示在这里</div>
+                    <div id="result-details"></div>
+                </div>
+                
+                <h2><i class="fas fa-info-circle"></i> 使用说明</h2>
+                <div class="info-box">
+                    <p><i class="fas fa-lightbulb"></i> 使用提示：</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>实时监测面板显示当前排泥状态和倒计时</li>
+                        <li>最近排泥记录显示最近5个周期的排泥情况</li>
+                        <li>在时间段查询部分，可以选择任意时间点查询排泥状态</li>
+                        <li>系统会根据排泥规则自动计算状态</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>二列沉淀池排泥状态监测系统 | © 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // 基准时间：2025年9月16日21:20
+        const baseTime = new Date(2025, 8, 16, 21, 20, 0);
+        const cycleDuration = 140; // 完整周期时长（分钟）：120分钟排泥 + 20分钟停止
+        const sludgeDuration = 120; // 排泥时长（分钟）
+        
+        // 更新当前时间显示
+        function updateCurrentTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false
+            };
+            document.getElementById('current-time').textContent = 
+                `当前时间：${now.toLocaleString('zh-CN', options)}`;
+            return now;
+        }
+        
+        // 检查当前排泥状态
+        function checkCurrentStatus() {
+            const now = updateCurrentTime();
+            
+            // 计算时间差（分钟）
+            const timeDiff = (now - baseTime) / (1000 * 60);
+            
+            if (timeDiff < 0) {
+                updateStatusPanel("not-sludging", "尚未开始排泥", null);
+                return;
+            }
+            
+            // 计算在当前周期中的位置
+            const cyclePosition = timeDiff % cycleDuration;
+            
+            // 判断是否在排泥
+            if (cyclePosition < sludgeDuration) {
+                const remaining = sludgeDuration - cyclePosition;
+                const endTime = new Date(now.getTime() + remaining * 60000);
+                updateStatusPanel("sludging", "正在排泥中", endTime, remaining);
+            } else {
+                const remaining = cycleDuration - cyclePosition;
+                const startTime = new Date(now.getTime() + remaining * 60000);
+                updateStatusPanel("not-sludging", "未在排泥", startTime, remaining);
+            }
+        }
+        
+        // 更新状态面板
+        function updateStatusPanel(status, text, nextTime, remainingMinutes = 0) {
+            const panel = document.getElementById('status-panel');
+            const statusText = document.querySelector('.status-text');
+            const statusIcon = document.querySelector('.status-icon');
+            const timer = document.getElementById('timer');
+            const nextChange = document.getElementById('next-change');
+            
+            // 更新样式和内容
+            panel.className = `status-panel ${status}`;
+            statusText.textContent = text;
+            
+            if (status === 'sludging') {
+                statusIcon.innerHTML = '<i class="fas fa-tint"></i>';
+                timer.textContent = `剩余排泥时间: ${formatTime(remainingMinutes)}`;
+                nextChange.textContent = `排泥结束时间: ${formatDateTime(nextTime)}`;
+            } else {
+                statusIcon.innerHTML = '<i class="fas fa-pause-circle"></i>';
+                timer.textContent = `距离下次排泥: ${formatTime(remainingMinutes)}`;
+                nextChange.textContent = `下次排泥开始: ${formatDateTime(nextTime)}`;
+            }
+        }
+        
+        // 查询指定时间是否在排泥
+        function checkTime() {
+            const queryTimeString = document.getElementById('query-time').value;
+            const queryTime = new Date(queryTimeString);
+            const resultDiv = document.getElementById('query-result');
+            const resultIcon = document.querySelector('.result-icon');
+            const resultText = document.querySelector('.result-text');
+            const resultDetails = document.getElementById('result-details');
+            
+            // 计算时间差（分钟）
+            const timeDiff = (queryTime - baseTime) / (1000 * 60);
+            
+            if (timeDiff < 0) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'query-result not-sludging';
+                resultIcon.innerHTML = '<i class="fas fa-ban"></i>';
+                resultText.textContent = '该时间早于基准开始时间，不在排泥。';
+                resultDetails.textContent = `基准开始时间: ${formatDateTime(baseTime)}`;
+                return;
+            }
+            
+            // 计算在当前周期中的位置
+            const cyclePosition = timeDiff % cycleDuration;
+            
+            // 判断是否在排泥
+            if (cyclePosition < sludgeDuration) {
+                const remaining = sludgeDuration - cyclePosition;
+                const endTime = new Date(queryTime.getTime() + remaining * 60000);
+                
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'query-result sludging';
+                resultIcon.innerHTML = '<i class="fas fa-tint"></i>';
+                resultText.textContent = '该时间正在排泥中';
+                resultDetails.textContent = `排泥结束时间: ${formatDateTime(endTime)}`;
+            } else {
+                const remaining = cycleDuration - cyclePosition;
+                const startTime = new Date(queryTime.getTime() + remaining * 60000);
+                
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'query-result not-sludging';
+                resultIcon.innerHTML = '<i class="fas fa-pause-circle"></i>';
+                resultText.textContent = '该时间未在排泥';
+                resultDetails.textContent = `下次排泥开始: ${formatDateTime(startTime)}`;
+            }
+        }
+        
+        // 生成最近排泥记录
+        function generateRecentRecords() {
+            const tableBody = document.getElementById('recent-table');
+            tableBody.innerHTML = '';
+            
+            const now = new Date();
+            // 计算最近5个周期
+            for (let i = 0; i < 5; i++) {
+                // 计算开始时间
+                const cyclesFromBase = Math.floor((now - baseTime) / (1000 * 60 * cycleDuration)) - i;
+                const startTime = new Date(baseTime.getTime() + cyclesFromBase * cycleDuration * 60000);
+                
+                // 跳过未来的周期
+                if (startTime > now) continue;
+                
+                // 计算结束时间
+                const endTime = new Date(startTime.getTime() + sludgeDuration * 60000);
+                
+                // 创建表格行
+                const row = document.createElement('tr');
+                
+                // 检查是否是当前周期
+                const isCurrent = (now >= startTime && now < endTime);
+                if (isCurrent) {
+                    row.style.fontWeight = 'bold';
+                    row.style.background = '#e8f6f3';
+                }
+                
+                row.innerHTML = `
+                    <td>${formatDateTime(startTime)}</td>
+                    <td>${formatDateTime(endTime)}</td>
+                    <td>${isCurrent ? '排泥中' : '已完成'}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            }
+        }
+        
+        // 格式化时间显示（分钟转换为HH:MM）
+        function formatTime(minutes) {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+        
+        // 格式化日期时间显示
+        function formatDateTime(date) {
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+        }
+        
+        // 初始化
+        function init() {
+            updateCurrentTime();
+            checkCurrentStatus();
+            generateRecentRecords();
+            
+            // 每秒更新一次时间和状态
+            setInterval(updateCurrentTime, 1000);
+            setInterval(checkCurrentStatus, 1000);
+            
+            // 每分钟更新一次记录
+            setInterval(generateRecentRecords, 60000);
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
